@@ -1,6 +1,6 @@
 import sqlite3
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from .db import get_db
 
@@ -22,9 +22,19 @@ def list_items():
     ).fetchall()
 
 
-def asset_tag_exists(asset_tag):
+def get_item(item_id):
+    return get_db().execute(
+        "SELECT id, name, category, asset_tag, condition, status"
+        " FROM equipment_item WHERE id = ?",
+        (item_id,),
+    ).fetchone()
+
+
+def asset_tag_exists(asset_tag, exclude_id=None):
+    """True if another item uses this tag. exclude_id skips the item being edited."""
     row = get_db().execute(
-        "SELECT 1 FROM equipment_item WHERE asset_tag = ?", (asset_tag,)
+        "SELECT 1 FROM equipment_item WHERE asset_tag = ? AND id IS NOT ?",
+        (asset_tag, exclude_id),
     ).fetchone()
     return row is not None
 
@@ -35,6 +45,16 @@ def insert_item(name, category, asset_tag, condition):
         "INSERT INTO equipment_item (name, category, asset_tag, condition, status)"
         " VALUES (?, ?, ?, ?, ?)",
         (name, category, asset_tag, condition, STATUS_AVAILABLE),
+    )
+    db.commit()
+
+
+def update_item(item_id, name, category, asset_tag, condition):
+    db = get_db()
+    db.execute(
+        "UPDATE equipment_item SET name = ?, category = ?, asset_tag = ?, condition = ?"
+        " WHERE id = ?",
+        (name, category, asset_tag, condition, item_id),
     )
     db.commit()
 
@@ -51,8 +71,15 @@ def clean_item_form(form):
     }
 
 
-def validate_item(data):
-    """Return a dict of {field: error message}. Empty dict means valid."""
+def duplicate_tag_message(asset_tag):
+    return f"Asset tag \"{asset_tag}\" is already in use."
+
+
+def validate_item(data, item_id=None):
+    """Return a dict of {field: error message}. Empty dict means valid.
+
+    Pass item_id when editing so the item's own asset tag isn't a duplicate.
+    """
     errors = {}
     if not data["name"]:
         errors["name"] = "Name is required."
@@ -60,8 +87,8 @@ def validate_item(data):
         errors["category"] = "Category is required."
     if not data["asset_tag"]:
         errors["asset_tag"] = "Asset tag is required."
-    elif asset_tag_exists(data["asset_tag"]):
-        errors["asset_tag"] = f"Asset tag \"{data['asset_tag']}\" is already in use."
+    elif asset_tag_exists(data["asset_tag"], exclude_id=item_id):
+        errors["asset_tag"] = duplicate_tag_message(data["asset_tag"])
     if data["condition"] not in CONDITIONS:
         errors["condition"] = "Choose a condition from the list."
     return errors
@@ -87,12 +114,45 @@ def new():
                 insert_item(**data)
             except sqlite3.IntegrityError:
                 # Backstop in case another request added the same tag meanwhile.
-                errors["asset_tag"] = f"Asset tag \"{data['asset_tag']}\" is already in use."
+                errors["asset_tag"] = duplicate_tag_message(data["asset_tag"])
             else:
                 flash(f"Added \"{data['name']}\".")
                 return redirect(url_for("items.index"))
 
+    return render_form(data, errors, heading="Add an item", submit_label="Add item")
+
+
+@bp.route("/<int:item_id>/edit", methods=["GET", "POST"])
+def edit(item_id):
+    item = get_item(item_id)
+    if item is None:
+        abort(404)
+
+    data = {key: item[key] for key in ("name", "category", "asset_tag", "condition")}
+    errors = {}
+
+    if request.method == "POST":
+        data = clean_item_form(request.form)
+        errors = validate_item(data, item_id=item_id)
+        if not errors:
+            try:
+                update_item(item_id, **data)
+            except sqlite3.IntegrityError:
+                errors["asset_tag"] = duplicate_tag_message(data["asset_tag"])
+            else:
+                flash(f"Saved \"{data['name']}\".")
+                return redirect(url_for("items.index"))
+
+    return render_form(data, errors, heading="Edit item", submit_label="Save changes")
+
+
+def render_form(data, errors, heading, submit_label):
     status_code = 400 if errors else 200
     return render_template(
-        "items/new.html", data=data, errors=errors, conditions=CONDITIONS
+        "items/form.html",
+        data=data,
+        errors=errors,
+        conditions=CONDITIONS,
+        heading=heading,
+        submit_label=submit_label,
     ), status_code
