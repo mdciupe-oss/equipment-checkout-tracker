@@ -11,13 +11,29 @@
       </thead>
       <tbody>
         {% for item in items %}
-          <tr>
+          {% set retired = item.status == "Retired" %}
+          <tr{% if retired %} class="retired"{% endif %}>
             <td>{{ item.name }}</td>
             <td>{{ item.category }}</td>
             <td>{{ item.asset_tag }}</td>
             <td>{{ item.condition }}</td>
-            <td>{{ item.status }}</td>
-            <td><a href="{{ url_for('items.edit', item_id=item.id) }}">Edit</a></td>
+            <td>
+              {% if retired %}<span class="badge-retired">Retired</span>{% else %}{{ item.status }}{% endif %}
+            </td>
+            <td class="actions">
+              {% if not retired %}
+                <a href="{{ url_for('items.edit', item_id=item.id) }}">Edit</a>
+                <form method="post" action="{{ url_for('items.retire', item_id=item.id) }}"
+                      onsubmit="return confirm('Retire this item? It will stay in the list but can no longer be edited.');">
+                  <button type="submit">Retire</button>
+                </form>
+              {% else %}
+                <form method="post" action="{{ url_for('items.reactivate', item_id=item.id) }}"
+                      onsubmit="return confirm('Reactivate this item? It will be available again.');">
+                  <button type="submit">Reactivate</button>
+                </form>
+              {% endif %}
+            </td>
           </tr>
         {% endfor %}
       </tbody>

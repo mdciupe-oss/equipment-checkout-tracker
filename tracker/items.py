@@ -59,6 +59,19 @@ def update_item(item_id, name, category, asset_tag, condition):
     db.commit()
 
 
+def set_status(item_id, status):
+    db = get_db()
+    db.execute("UPDATE equipment_item SET status = ? WHERE id = ?", (status, item_id))
+    db.commit()
+
+
+def get_item_or_404(item_id):
+    item = get_item(item_id)
+    if item is None:
+        abort(404)
+    return item
+
+
 # --- Validation ------------------------------------------------------------
 
 def clean_item_form(form):
@@ -124,9 +137,10 @@ def new():
 
 @bp.route("/<int:item_id>/edit", methods=["GET", "POST"])
 def edit(item_id):
-    item = get_item(item_id)
-    if item is None:
-        abort(404)
+    item = get_item_or_404(item_id)
+    if item["status"] == STATUS_RETIRED:
+        flash(f"\"{item['name']}\" is retired. Retired items can't be edited.")
+        return redirect(url_for("items.index"))
 
     data = {key: item[key] for key in ("name", "category", "asset_tag", "condition")}
     errors = {}
@@ -144,6 +158,28 @@ def edit(item_id):
                 return redirect(url_for("items.index"))
 
     return render_form(data, errors, heading="Edit item", submit_label="Save changes")
+
+
+@bp.route("/<int:item_id>/retire", methods=["POST"])
+def retire(item_id):
+    item = get_item_or_404(item_id)
+    if item["status"] == STATUS_RETIRED:
+        flash(f"\"{item['name']}\" is already retired.")
+    else:
+        set_status(item_id, STATUS_RETIRED)
+        flash(f"Retired \"{item['name']}\".")
+    return redirect(url_for("items.index"))
+
+
+@bp.route("/<int:item_id>/reactivate", methods=["POST"])
+def reactivate(item_id):
+    item = get_item_or_404(item_id)
+    if item["status"] != STATUS_RETIRED:
+        flash(f"\"{item['name']}\" is not retired.")
+    else:
+        set_status(item_id, STATUS_AVAILABLE)
+        flash(f"Reactivated \"{item['name']}\". It is available again.")
+    return redirect(url_for("items.index"))
 
 
 def render_form(data, errors, heading, submit_label):
