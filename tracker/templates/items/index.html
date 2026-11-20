@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Equipment{% endblock %}
+{% block content %}
+  <h1>Equipment</h1>
+  <p><a href="{{ url_for('items.new') }}">Add an item</a></p>
+
+  {% if items %}
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Category</th><th>Asset tag</th><th>Condition</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.category }}</td>
+            <td>{{ item.asset_tag }}</td>
+            <td>{{ item.condition }}</td>
+            <td>{{ item.status }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No equipment yet.</p>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · Equipment Checkout Tracker</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 0 auto; padding: 1rem; }
+    nav { display: flex; gap: 1rem; padding-bottom: .75rem; border-bottom: 1px solid #ccc; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #ddd; }
+    label { display: block; margin-top: .75rem; font-weight: 600; }
+    input, select { padding: .35rem; width: 18rem; max-width: 100%; }
+    button { margin-top: 1rem; padding: .45rem 1rem; }
+    .error { color: #b00020; margin: .2rem 0 0; }
+    .flash { background: #e6f4ea; padding: .5rem .75rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="{{ url_for('home') }}">Home</a>
+    <a href="{{ url_for('items.index') }}">Equipment</a>
+    {# Login / logout links will go here. #}
+  </nav>
+
+  {% for message in get_flashed_messages() %}
+    <p class="flash">{{ message }}</p>
+  {% endfor %}
+
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>

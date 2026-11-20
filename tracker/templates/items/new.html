@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Add item{% endblock %}
+{% block content %}
+  <h1>Add an item</h1>
+
+  {% if errors %}
+    <p class="error" role="alert">Please fix the problems below.</p>
+  {% endif %}
+
+  <form method="post" novalidate>
+    <label for="name">Name</label>
+    <input id="name" name="name" value="{{ data.name }}">
+    {% if errors.name %}<p class="error">{{ errors.name }}</p>{% endif %}
+
+    <label for="category">Category</label>
+    <input id="category" name="category" value="{{ data.category }}">
+    {% if errors.category %}<p class="error">{{ errors.category }}</p>{% endif %}
+
+    <label for="asset_tag">Asset tag</label>
+    <input id="asset_tag" name="asset_tag" value="{{ data.asset_tag }}">
+    {% if errors.asset_tag %}<p class="error">{{ errors.asset_tag }}</p>{% endif %}
+
+    <label for="condition">Condition</label>
+    <select id="condition" name="condition">
+      {% for c in conditions %}
+        <option value="{{ c }}" {% if c == data.condition %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    {% if errors.condition %}<p class="error">{{ errors.condition }}</p>{% endif %}
+
+    <div><button type="submit">Add item</button></div>
+  </form>
+{% endblock %}

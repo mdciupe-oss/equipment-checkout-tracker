@@ -1,4 +1,5 @@
 import sqlite3
+from importlib import resources
 
 from flask import current_app, g
 
@@ -18,5 +19,13 @@ def close_db(exception=None):
         conn.close()
 
 
+def init_db():
+    """Create any missing tables. Safe to run repeatedly; never deletes data."""
+    schema = resources.files("tracker").joinpath("schema.sql").read_text(encoding="utf-8")
+    get_db().executescript(schema)
+
+
 def init_app(app):
     app.teardown_appcontext(close_db)
+    with app.app_context():
+        init_db()
