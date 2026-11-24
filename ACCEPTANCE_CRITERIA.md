@@ -11,3 +11,8 @@
 [ ] The overview page lists checked-out items, and overdue items are flagged correctly.
 [ ] All automated tests pass with one command (pytest).
 [ ] The app runs at a public Replit link, and the README explains how to run it locally.
+[ ] Every add, edit, retire, reactivate, checkout, and return is recorded with the user, the action, the item, and the time.
+[ ] Only an admin can view the audit log.
+[ ] An admin can deactivate a user; a deactivated user cannot log in.
+[ ] An admin can change a user’s department.
+[ ] An admin can view and edit equipment in every department, including retired items.
