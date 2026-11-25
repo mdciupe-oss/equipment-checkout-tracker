@@ -8,6 +8,7 @@
   {% endif %}
 
   <form method="post" novalidate data-unsaved-guard{% if errors %} data-start-dirty{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label for="name">Name</label>
     <input id="name" name="name" value="{{ data.name }}">
     {% if errors.name %}<p class="error">{{ errors.name }}</p>{% endif %}

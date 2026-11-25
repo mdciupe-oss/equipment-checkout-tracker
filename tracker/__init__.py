@@ -1,8 +1,11 @@
 import os
 
 from flask import Flask, render_template
+from flask_wtf.csrf import CSRFError, CSRFProtect
 
 from . import auth, db, items
+
+csrf = CSRFProtect()
 
 SECRET_KEY_ENV_VAR = "TRACKER_SECRET_KEY"
 
@@ -23,6 +26,9 @@ def create_app(test_config=None, instance_path=None):
     app = Flask(__name__, instance_path=instance_path, instance_relative_config=True)
     app.config.from_mapping(
         DATABASE=os.path.join(app.instance_path, "tracker.sqlite"),
+        # CSRF tokens stay valid for the whole browser session, so a form
+        # left open for a long time can still be submitted.
+        WTF_CSRF_TIME_LIMIT=None,
     )
     app.config.from_pyfile("config.py", silent=True)
 
@@ -36,6 +42,13 @@ def create_app(test_config=None, instance_path=None):
         raise RuntimeError(MISSING_SECRET_MESSAGE)
 
     os.makedirs(app.instance_path, exist_ok=True)
+
+    # Every POST (and other data-changing request) must carry a valid token.
+    csrf.init_app(app)
+
+    @app.errorhandler(CSRFError)
+    def csrf_error(error):
+        return render_template("errors/csrf.html"), 400
 
     db.init_app(app)
     app.register_blueprint(auth.bp)

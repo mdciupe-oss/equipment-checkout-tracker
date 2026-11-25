@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Form not accepted{% endblock %}
+{% block content %}
+  <h1>Form not accepted</h1>
+  <p class="error" role="alert">
+    This form has expired or was sent from another site.
+    Go back, reload the page and try again.
+  </p>
+  <p><a href="{{ url_for('home') }}">Go to the home page</a></p>
+{% endblock %}

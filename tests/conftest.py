@@ -17,6 +17,9 @@ def app(tmp_path, monkeypatch):
             "TESTING": True,
             "SECRET_KEY": "test-only-not-a-real-secret",
             "DATABASE": str(tmp_path / "test.sqlite"),
+            # Most tests check business rules, not CSRF, so the token check
+            # is off here. tests/test_csrf.py turns it back on.
+            "WTF_CSRF_ENABLED": False,
         },
         instance_path=str(tmp_path / "instance"),
     )

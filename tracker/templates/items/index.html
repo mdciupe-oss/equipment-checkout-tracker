@@ -25,11 +25,13 @@
                 <a href="{{ url_for('items.edit', item_id=item.id) }}">Edit</a>
                 <form method="post" action="{{ url_for('items.retire', item_id=item.id) }}"
                       onsubmit="return confirm('Retire this item? It will stay in the list but can no longer be edited.');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit">Retire</button>
                 </form>
               {% else %}
                 <form method="post" action="{{ url_for('items.reactivate', item_id=item.id) }}"
                       onsubmit="return confirm('Reactivate this item? It will be available again.');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit">Reactivate</button>
                 </form>
               {% endif %}
