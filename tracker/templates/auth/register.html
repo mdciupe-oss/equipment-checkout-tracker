@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+  <h1>Register</h1>
+
+  {% if errors %}
+    <p class="error" role="alert">Please fix the problems below.</p>
+  {% endif %}
+
+  <form method="post" novalidate>
+    <label for="username">Username</label>
+    <input id="username" name="username" value="{{ data.username }}" autocomplete="username">
+    {% if errors.username %}<p class="error">{{ errors.username }}</p>{% endif %}
+
+    <label for="password">Password <small>(at least {{ min_length }} characters)</small></label>
+    <input id="password" name="password" type="password" autocomplete="new-password">
+    {% if errors.password %}<p class="error">{{ errors.password }}</p>{% endif %}
+
+    <label for="confirm_password">Confirm password</label>
+    <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password">
+    {% if errors.confirm_password %}<p class="error">{{ errors.confirm_password }}</p>{% endif %}
+
+    <label for="department_id">Department</label>
+    <select id="department_id" name="department_id">
+      <option value="">Choose a department…</option>
+      {% for d in departments %}
+        <option value="{{ d.id }}" {% if d.id|string == data.department_id %}selected{% endif %}>{{ d.name }}</option>
+      {% endfor %}
+    </select>
+    {% if errors.department_id %}<p class="error">{{ errors.department_id }}</p>{% endif %}
+
+    <div><button type="submit">Create account</button></div>
+  </form>
+
+  <p>Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+{% endblock %}

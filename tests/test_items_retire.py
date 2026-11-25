@@ -2,6 +2,8 @@ import pytest
 
 from tracker.db import get_db
 
+pytestmark = pytest.mark.usefixtures("logged_in")
+
 
 @pytest.fixture
 def item(client, app):

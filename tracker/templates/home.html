@@ -2,5 +2,10 @@
 {% block title %}Home{% endblock %}
 {% block content %}
   <h1>Equipment Checkout Tracker</h1>
-  <p><a href="{{ url_for('items.index') }}">View equipment</a></p>
+  {% if g.user %}
+    <p><a href="{{ url_for('items.index') }}">View equipment</a></p>
+  {% else %}
+    <p><a href="{{ url_for('auth.login') }}">Log in</a> or
+       <a href="{{ url_for('auth.register') }}">register</a> to manage equipment.</p>
+  {% endif %}
 {% endblock %}

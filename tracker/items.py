@@ -2,9 +2,11 @@ import sqlite3
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
+from .auth import require_login_for_blueprint
 from .db import get_db
 
 bp = Blueprint("items", __name__, url_prefix="/items")
+require_login_for_blueprint(bp)
 
 CONDITIONS = ["Good", "Fair", "Needs repair"]
 STATUS_AVAILABLE = "Available"

@@ -3,6 +3,10 @@ client can't execute. These tests check the server side of the contract:
 the forms opt in to the guard, rejected forms start as "unsaved", and the
 script is served. The click-and-leave behaviour is covered by manual steps."""
 
+import pytest
+
+pytestmark = pytest.mark.usefixtures("logged_in")
+
 
 def add_item(client):
     client.post("/items/new", data={

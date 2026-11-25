@@ -6,7 +6,10 @@
   <title>{% block title %}{% endblock %} · Equipment Checkout Tracker</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 0 auto; padding: 1rem; }
-    nav { display: flex; gap: 1rem; padding-bottom: .75rem; border-bottom: 1px solid #ccc; }
+    nav { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+          padding-bottom: .75rem; border-bottom: 1px solid #ccc; }
+    .nav-user { margin-left: auto; color: #555; }
+    .nav-form, .nav-form button { margin: 0; }
     table { border-collapse: collapse; width: 100%; }
     th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #ddd; }
     label { display: block; margin-top: .75rem; font-weight: 600; }
@@ -24,8 +27,17 @@
 <body>
   <nav>
     <a href="{{ url_for('home') }}">Home</a>
-    <a href="{{ url_for('items.index') }}">Equipment</a>
-    {# Login / logout links will go here. #}
+    {% if g.user %}
+      <a href="{{ url_for('items.index') }}">Equipment</a>
+      <span class="nav-user">{{ g.user.username }} ({{ g.user.department_name }})</span>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="nav-form">
+        <button type="submit">Log out</button>
+      </form>
+    {% else %}
+      <span class="nav-user"></span>
+      <a href="{{ url_for('auth.login') }}">Log in</a>
+      <a href="{{ url_for('auth.register') }}">Register</a>
+    {% endif %}
   </nav>
 
   {% for message in get_flashed_messages() %}
