@@ -50,9 +50,11 @@ def log_in_with_token(client):
 def add_item_row(app, asset_tag="LAP-001", status="Available"):
     with app.app_context():
         db = get_db()
+        # Same department as the default test user (Library).
         db.execute(
-            "INSERT INTO equipment_item (name, category, asset_tag, status)"
-            " VALUES ('Dell Laptop', 'Laptop', ?, ?)",
+            "INSERT INTO equipment_item (name, category, asset_tag, status, department_id)"
+            " VALUES ('Dell Laptop', 'Laptop', ?, ?,"
+            " (SELECT id FROM department WHERE name = 'Library'))",
             (asset_tag, status),
         )
         db.commit()

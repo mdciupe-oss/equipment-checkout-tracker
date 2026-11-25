@@ -3,6 +3,8 @@ from importlib import resources
 
 from flask import current_app, g
 
+from . import migrations
+
 
 def get_db():
     """Return a SQLite connection for the current request, opening one if needed."""
@@ -30,3 +32,11 @@ def init_app(app):
     app.teardown_appcontext(close_db)
     with app.app_context():
         init_db()
+
+    # Bring databases made by older versions up to date (no-op if current).
+    for version, backup in migrations.run_migrations(app.config["DATABASE"]):
+        if backup:
+            app.logger.warning(
+                "Database migrated to version %s. Backup of the previous file: %s",
+                version, backup,
+            )

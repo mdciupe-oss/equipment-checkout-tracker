@@ -1,6 +1,6 @@
 import sqlite3
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
 from .auth import require_login_for_blueprint
 from .db import get_db
@@ -14,26 +14,48 @@ STATUS_RETIRED = "Retired"
 STATUSES = [STATUS_AVAILABLE, STATUS_RETIRED]
 
 
+# --- Access rule -----------------------------------------------------------
+
+def item_scope():
+    """THE rule for which equipment the current user may see and change.
+
+    Returns an SQL condition and its parameters. Every equipment query below
+    uses it, so this is the only place to change when admins are added, e.g.:
+        if g.user["role"] == ROLE_ADMIN:
+            return "1 = 1", []
+    """
+    return "department_id = ?", [g.user["department_id"]]
+
+
 # --- Data access -----------------------------------------------------------
-# All item queries live here, so adding a department filter later is local.
+
+ITEM_COLUMNS = "id, name, category, asset_tag, condition, status, department_id"
+
 
 def list_items():
+    condition, params = item_scope()
     return get_db().execute(
-        "SELECT id, name, category, asset_tag, condition, status"
-        " FROM equipment_item ORDER BY name COLLATE NOCASE"
+        f"SELECT {ITEM_COLUMNS} FROM equipment_item"
+        f" WHERE {condition} ORDER BY name COLLATE NOCASE",
+        params,
     ).fetchall()
 
 
 def get_item(item_id):
+    """The item, or None if it doesn't exist OR the user may not access it."""
+    condition, params = item_scope()
     return get_db().execute(
-        "SELECT id, name, category, asset_tag, condition, status"
-        " FROM equipment_item WHERE id = ?",
-        (item_id,),
+        f"SELECT {ITEM_COLUMNS} FROM equipment_item WHERE id = ? AND {condition}",
+        [item_id, *params],
     ).fetchone()
 
 
 def asset_tag_exists(asset_tag, exclude_id=None):
-    """True if another item uses this tag. exclude_id skips the item being edited."""
+    """True if another item uses this tag. exclude_id skips the item being edited.
+
+    Deliberately NOT limited by item_scope(): asset tags are unique across
+    all departments.
+    """
     row = get_db().execute(
         "SELECT 1 FROM equipment_item WHERE asset_tag = ? AND id IS NOT ?",
         (asset_tag, exclude_id),
@@ -42,32 +64,45 @@ def asset_tag_exists(asset_tag, exclude_id=None):
 
 
 def insert_item(name, category, asset_tag, condition):
+    # New items always belong to the logged-in user's department.
     db = get_db()
     db.execute(
-        "INSERT INTO equipment_item (name, category, asset_tag, condition, status)"
-        " VALUES (?, ?, ?, ?, ?)",
-        (name, category, asset_tag, condition, STATUS_AVAILABLE),
+        "INSERT INTO equipment_item"
+        " (name, category, asset_tag, condition, status, department_id)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        (name, category, asset_tag, condition, STATUS_AVAILABLE, g.user["department_id"]),
     )
     db.commit()
 
 
 def update_item(item_id, name, category, asset_tag, condition):
+    # The scope is applied again here as a second line of defence.
+    scope, params = item_scope()
     db = get_db()
     db.execute(
         "UPDATE equipment_item SET name = ?, category = ?, asset_tag = ?, condition = ?"
-        " WHERE id = ?",
-        (name, category, asset_tag, condition, item_id),
+        f" WHERE id = ? AND {scope}",
+        [name, category, asset_tag, condition, item_id, *params],
     )
     db.commit()
 
 
 def set_status(item_id, status):
+    scope, params = item_scope()
     db = get_db()
-    db.execute("UPDATE equipment_item SET status = ? WHERE id = ?", (status, item_id))
+    db.execute(
+        f"UPDATE equipment_item SET status = ? WHERE id = ? AND {scope}",
+        [status, item_id, *params],
+    )
     db.commit()
 
 
 def get_item_or_404(item_id):
+    """Every view that works on one item starts here.
+
+    Another department's item gives the same 404 as a missing one, so users
+    can't discover which item ids exist elsewhere.
+    """
     item = get_item(item_id)
     if item is None:
         abort(404)
